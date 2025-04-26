@@ -105,8 +105,8 @@ def recommend(movie_id: int, top_n: int = 5):
 def export():
     if not recommender:
         raise HTTPException(status_code=400, detail="Recommender not initialized")
-    recommender.export_constellation_data("constellation_data.json")
-    return {"message": "Constellation data exported"}
+    data = recommender.get_constellation_data()
+    return JSONResponse(content=data)
 
 @app.post("/users/signup")
 async def signup(auth: AuthRequest):

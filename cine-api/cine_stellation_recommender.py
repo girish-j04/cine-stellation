@@ -126,6 +126,49 @@ class CineStellationRecommender:
             return int(year) if year.isdigit() else None
         except:
             return None
+    
+    def get_constellation_data(self):
+        
+        """Return constellation data as a dictionary for API serving"""
+        constellation_data = {
+            "genres": [],
+            "movies": [],
+            "connections": []
+        }
+
+        movie_ids_added = set()
+
+        for genre, G in self.genre_networks.items():
+            genre_info = {
+                "name": genre,
+                "movieCount": G.number_of_nodes(),
+                "connectionCount": G.number_of_edges()
+            }
+            constellation_data["genres"].append(genre_info)
+
+            for movie_id, attrs in G.nodes(data=True):
+                if movie_id not in movie_ids_added:
+                    movie_info = {
+                        "id": int(movie_id),
+                        "title": attrs["title"],
+                        "rating": float(attrs["rating"]),
+                        "ratingCount": int(attrs["count"]),
+                        "year": attrs["year"],
+                        "genres": [g for g in self.movies_df[self.movies_df["movieId"] == movie_id]["genres"].iloc[0]]
+                    }
+                    constellation_data["movies"].append(movie_info)
+                    movie_ids_added.add(movie_id)
+
+            for movie_i, movie_j, attrs in G.edges(data=True):
+                connection = {
+                    "source": int(movie_i),
+                    "target": int(movie_j),
+                    "similarity": float(attrs["weight"]),
+                    "genre": genre
+                }
+                constellation_data["connections"].append(connection)
+
+        return constellation_data
 
     def export_constellation_data(self, output_file="constellation_data.json"):
         constellation_data = {"genres": [], "movies": [], "connections": []}
