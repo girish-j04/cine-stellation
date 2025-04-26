@@ -1,30 +1,31 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function HomePage({ onEnterApp }) {
+export default function HomePage() {
   const [fadeOut, setFadeOut] = useState(false);
   const [typedText, setTypedText] = useState('');
   const fullTagline = "Where the stars align to find you movies";
-  
-  // Function to handle transition from homepage to graph
+  const router = useRouter();
+
+  // Navigate to login after fade-out
   const handleEnterApp = () => {
     setFadeOut(true);
     setTimeout(() => {
-      onEnterApp(); // Call the parent function to change views
-    }, 500); // Match this timing with CSS transition duration
+      router.push('/login'); // Route to login page
+    }, 500);
   };
-  
-  // Typing effect
+
+  // Typing animation logic
   useEffect(() => {
     if (typedText.length < fullTagline.length) {
       const typingTimer = setTimeout(() => {
         setTypedText(fullTagline.substring(0, typedText.length + 1));
-      }, 70); // Adjust typing speed here (milliseconds per character)
-      
+      }, 70);
       return () => clearTimeout(typingTimer);
     }
   }, [typedText, fullTagline]);
-  
+
   return (
     <div 
       className={`home-container ${fadeOut ? 'fade-out' : ''}`}
@@ -43,47 +44,44 @@ export default function HomePage({ onEnterApp }) {
         opacity: fadeOut ? 0 : 1
       }}
     >
-      <h1 
-        style={{
-          fontSize: '4rem',
-          color: 'white',
-          textShadow: '0 0 10px rgba(255, 255, 255, 0.7)',
-          marginBottom: '2rem',
-          fontWeight: '300',
-          letterSpacing: '0.2rem'
-        }}
-      >
+      <h1 style={{
+        fontSize: '4rem',
+        color: 'white',
+        textShadow: '0 0 10px rgba(255, 255, 255, 0.7)',
+        marginBottom: '2rem',
+        fontWeight: '300',
+        letterSpacing: '0.2rem'
+      }}>
         Cine-Stellation
       </h1>
-      <p
-        style={{
-          fontSize: '1.5rem',
-          color: 'rgba(255, 255, 255, 0.8)',
-          maxWidth: '600px',
-          textAlign: 'center',
-          marginBottom: '3rem',
-          height: '2em', // Fixed height to prevent layout shift
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
+
+      <p style={{
+        fontSize: '1.5rem',
+        color: 'rgba(255, 255, 255, 0.8)',
+        maxWidth: '600px',
+        textAlign: 'center',
+        marginBottom: '3rem',
+        height: '2em',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
         {typedText}
-        <span 
-          style={{
-            borderRight: '0.15em solid rgba(255, 255, 255, 0.8)',
-            animation: 'blink-caret 0.75s step-end infinite',
-            marginLeft: '2px',
-            display: typedText.length >= fullTagline.length ? 'none' : 'inline-block'
-          }}
-        />
+        <span style={{
+          borderRight: '0.15em solid rgba(255, 255, 255, 0.8)',
+          animation: 'blink-caret 0.75s step-end infinite',
+          marginLeft: '2px',
+          display: typedText.length >= fullTagline.length ? 'none' : 'inline-block'
+        }}/>
       </p>
+
       <style jsx>{`
         @keyframes blink-caret {
           from, to { border-color: transparent }
           50% { border-color: rgba(255, 255, 255, 0.8) }
         }
       `}</style>
+
       <button
         onClick={handleEnterApp}
         style={{

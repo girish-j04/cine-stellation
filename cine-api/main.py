@@ -5,9 +5,28 @@ from database import insert_movies, insert_ratings, insert_similarity_matrix, lo
 import shutil
 import os
 import pandas as pd
+from fastapi import Body
+from fastapi.middleware.cors import CORSMiddleware
+from database import create_user, verify_user
+
+
+
 
 app = FastAPI()
 recommender = None
+
+# Allow frontend to make requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # adjust for prod
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class AuthRequest(BaseModel):
+    email: str
+    password: str
 
 class ConstellationRequest(BaseModel):
     min_ratings: int = 20
@@ -88,3 +107,17 @@ def export():
         raise HTTPException(status_code=400, detail="Recommender not initialized")
     recommender.export_constellation_data("constellation_data.json")
     return {"message": "Constellation data exported"}
+
+@app.post("/users/signup")
+async def signup(auth: AuthRequest):
+    user = await create_user(auth.email, auth.password)
+    if not user:
+        raise HTTPException(status_code=409, detail="Email already registered.")
+    return user
+
+@app.post("/users/login")
+async def login(auth: AuthRequest):
+    user = await verify_user(auth.email, auth.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    return user

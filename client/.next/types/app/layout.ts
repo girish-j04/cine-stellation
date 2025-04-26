@@ -1,4 +1,4 @@
-// File: /home/gj04/Cu Boulder/Courses/BDA/Project/cine-stellation/client/src/app/layout.js
+// File: /home/gj04/Cu Boulder/Courses/BDA/Project/cine-stellation/client/src/app/layout.jsx
 import * as entry from '../../../src/app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
