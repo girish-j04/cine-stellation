@@ -1,12 +1,28 @@
 "use client";
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useSession } from "next-auth/react";
 import useMoviesData from './MovieData';
 import useSimilarMovies from './SimilarMovies';
 import { drawConnections } from './ConnectionRenderer';
 import { drawMovieNode } from './MovieNodeRenderer';
 import { drawSelectedMovieInfo } from './MovieInfoRenderer';
+import useWatchedMovies from './useWatchedMovies';
+import WatchedMovieCheckbox from './WatchedMovieCheckbox';
 
 export default function MovieRecommendationGraph() {
+  // ====== Auth/session ======
+  const { data: session, status } = useSession();
+  const userEmail = session?.user?.email;
+
+  // Auth handling (optional UX improvement)
+  if (status === "loading") {
+    return <div style={{ color: "#fff", padding: 48, textAlign: "center" }}>Loading...</div>;
+  }
+  if (!userEmail) {
+    return <div style={{ color: "#fff", padding: 48, textAlign: "center" }}>Please log in to access recommendations.</div>;
+  }
+
+  // ====== Main logic below ======
   const canvasRef = useRef(null);
   const movies = useMoviesData();
 
@@ -15,7 +31,7 @@ export default function MovieRecommendationGraph() {
    * =====================*/
   const [selectedMovie, setSelectedMovie] = useState(null);
 
-  // Genre filtering ----------------------------------
+  // Genre filtering
   const [selectedGenres, setSelectedGenres] = useState(new Set());
   const toggleGenre = (genre) => {
     setSelectedGenres(prev => {
@@ -240,6 +256,14 @@ export default function MovieRecommendationGraph() {
     return Array.from(s).sort();
   }, [movies]);
 
+  /* ================
+   *  Watched Movies Logic
+   * ================*/
+  const { watched, addWatched, removeWatched } = useWatchedMovies(userEmail);
+  const isWatched = selectedMovie
+    ? watched.some(m => m.id === selectedMovie.id)
+    : false;
+
   /* =============================================================
    *  JSX
    * =============================================================*/
@@ -360,6 +384,17 @@ export default function MovieRecommendationGraph() {
           transition: 'opacity 0.5s ease-in-out',
         }}
       />
+
+      {/* Watched Movie Checkbox Overlay */}
+      {selectedMovie && (
+        <WatchedMovieCheckbox
+          movie={selectedMovie}
+          isWatched={isWatched}
+          addWatched={addWatched}
+          removeWatched={removeWatched}
+          canvasRef={canvasRef}
+        />
+      )}
 
       {/* Zoom Controls */}
       <div style={{

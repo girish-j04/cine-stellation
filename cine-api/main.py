@@ -10,8 +10,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import create_user, verify_user, save_constellation_data, load_constellation_data
 from fastapi.responses import JSONResponse
 
+from pydantic import BaseModel
+from database import add_watched_movie, get_watched_movies
 
+from database import remove_watched_movie
 
+class RemoveWatchedRequest(BaseModel):
+    email: str
+    movie_id: int
+
+class WatchedMovieRequest(BaseModel):
+    email: str  # or user_id, depending on your authentication
+    movie_id: int
+    movie_title: str
 
 app = FastAPI()
 recommender = None
@@ -125,3 +136,23 @@ async def login(auth: AuthRequest):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password.")
     return user
+
+@app.post("/users/add-watched")
+async def add_watched(req: WatchedMovieRequest):
+    success = await add_watched_movie(req.email, req.movie_id, req.movie_title)
+    if not success:
+        raise HTTPException(status_code=400, detail="Could not update watched list.")
+    return {"message": "Movie added to watched list."}
+
+@app.get("/users/watched")
+async def fetch_watched(email: str):
+    movies = await get_watched_movies(email)
+    return {"watched_movies": movies}
+
+@app.post("/users/remove-watched")
+async def remove_watched(req: RemoveWatchedRequest):
+    success = await remove_watched_movie(req.email, req.movie_id)
+    if not success:
+        raise HTTPException(status_code=400, detail="Could not remove watched movie.")
+    return {"message": "Movie removed from watched list."}
+

@@ -73,3 +73,25 @@ async def load_constellation_data():
 
 def get_db():
     return db
+
+async def add_watched_movie(email: str, movie_id: int, movie_title: str):
+    result = await db.users.update_one(
+        {"email": email},
+        {"$addToSet": {"watched_movies": {"id": movie_id, "title": movie_title}}}
+    )
+    return result.modified_count > 0
+
+async def get_watched_movies(email: str):
+    user = await db.users.find_one({"email": email})
+    if user and "watched_movies" in user:
+        return user["watched_movies"]
+    return []
+
+async def remove_watched_movie(email: str, movie_id: int):
+    result = await db.users.update_one(
+        {"email": email},
+        {"$pull": {"watched_movies": {"id": movie_id}}}
+    )
+    return result.modified_count > 0
+
+
