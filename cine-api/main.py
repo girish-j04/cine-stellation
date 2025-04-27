@@ -7,7 +7,8 @@ import os
 import pandas as pd
 from fastapi import Body
 from fastapi.middleware.cors import CORSMiddleware
-from database import create_user, verify_user
+from database import create_user, verify_user, save_constellation_data, load_constellation_data
+from fastapi.responses import JSONResponse
 
 
 
@@ -89,11 +90,13 @@ async def compute_similarity():
     return {"message": "Similarity matrix computed and stored."}
 
 @app.post("/create-constellations")
-def create_constellations(req: ConstellationRequest):
+async def create_constellations(req: ConstellationRequest):
     if not recommender:
         raise HTTPException(status_code=400, detail="Recommender not initialized")
     recommender.create_genre_constellations(req.min_ratings, req.similarity_threshold, req.max_connections)
-    return {"message": "Constellations created"}
+    data = recommender.get_constellation_data()
+    await save_constellation_data(data)
+    return {"message": "Constellations created and saved to MongoDB"}
 
 @app.get("/recommend/{movie_id}")
 def recommend(movie_id: int, top_n: int = 5):
@@ -102,10 +105,11 @@ def recommend(movie_id: int, top_n: int = 5):
     return recommender.recommend_similar_movies(movie_id, top_n)
 
 @app.get("/export")
-def export():
-    if not recommender:
-        raise HTTPException(status_code=400, detail="Recommender not initialized")
-    data = recommender.get_constellation_data()
+async def export():
+    data = await load_constellation_data()
+    if not data:
+        raise HTTPException(status_code=404, detail="Constellation data not found")
+    data.pop("_id", None)  # remove MongoDB ObjectId
     return JSONResponse(content=data)
 
 @app.post("/users/signup")

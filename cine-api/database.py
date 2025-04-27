@@ -63,5 +63,13 @@ async def load_ratings():
 async def load_similarity_matrix():
     return await db.similarities.find().to_list(None)
 
+async def save_constellation_data(data: dict):
+    await db.constellations.delete_many({})
+    await db.constellations.insert_one(data)
+
+async def load_constellation_data():
+    return await db.constellations.find_one()
+
+
 def get_db():
     return db
