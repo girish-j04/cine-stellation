@@ -7,3 +7,4 @@ networkx
 matplotlib
 motor
 python-dotenv
+bcrypt

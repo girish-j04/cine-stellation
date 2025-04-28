@@ -2,5 +2,6 @@
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/page": "app/page.js",
   "/login/page": "app/login/page.js",
-  "/graph/page": "app/graph/page.js"
+  "/graph/page": "app/graph/page.js",
+  "/my-constellation/page": "app/my-constellation/page.js"
 }

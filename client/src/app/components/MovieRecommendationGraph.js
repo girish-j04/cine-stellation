@@ -101,38 +101,80 @@ export default function MovieRecommendationGraph() {
    *  Canvas Render
    * ================*/
   useEffect(() => {
-    if (!canvasRef.current || visibleMovies.length === 0) return;
     const canvas = canvasRef.current;
+  
+    if (!canvas || movies.length === 0) return;
+  
     const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = canvas.offsetWidth * dpr;
-    canvas.height = canvas.offsetHeight * dpr;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.save();
-    ctx.scale(dpr * zoomLevel, dpr * zoomLevel);
-    ctx.translate(panOffset.x / zoomLevel, panOffset.y / zoomLevel);
-
-    // Draw connections & nodes only for visible movies
-    drawConnections(ctx, visibleMovies, selectedMovie, similarMovies);
-
-    visibleMovies.forEach(movie => {
-      const adjustedMouseX = (mousePosition.x - panOffset.x) / zoomLevel;
-      const adjustedMouseY = (mousePosition.y - panOffset.y) / zoomLevel;
-      const distance = Math.sqrt((movie.x - adjustedMouseX) ** 2 + (movie.y - adjustedMouseY) ** 2);
-      const isHovered = distance <= movie.radius;
-      const isHighlighted = selectedMovie && (
-        movie.id === selectedMovie.id ||
-        similarMovies.some(m => m.id === movie.id)
-      );
-      drawMovieNode(ctx, movie, isHighlighted, isHovered, selectedMovie);
-    });
-
-    if (selectedMovie) {
-      drawSelectedMovieInfo(ctx, selectedMovie, similarMovies);
+    if (!(ctx instanceof CanvasRenderingContext2D)) {
+      console.error("❌ Invalid canvas context — skipping draw");
+      return;
     }
-    ctx.restore();
-  }, [visibleMovies, selectedMovie, similarMovies, mousePosition, zoomLevel, panOffset]);
+  
+    try {
+      const dpr = window.devicePixelRatio || 1;
+      const width = canvas.offsetWidth;
+      const height = canvas.offsetHeight;
+  
+      if (!width || !height) {
+        console.warn("⚠️ Canvas has zero width or height — skipping render");
+        return;
+      }
+  
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+  
+      if (ctx.reset) ctx.reset();
+      else ctx.setTransform(1, 0, 0, 1, 0, 0);
+  
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+  
+      ctx.scale(dpr * zoomLevel, dpr * zoomLevel);
+      ctx.translate(panOffset.x / zoomLevel, panOffset.y / zoomLevel);
+  
+      drawConnections(ctx, movies, selectedMovie, similarMovies);
+  
+      movies.forEach(movie => {
+        const adjustedMouseX = (mousePosition.x - panOffset.x) / zoomLevel;
+        const adjustedMouseY = (mousePosition.y - panOffset.y) / zoomLevel;
+        const distance = Math.sqrt(
+          Math.pow(movie.x - adjustedMouseX, 2) +
+          Math.pow(movie.y - adjustedMouseY, 2)
+        );
+        const isHovered = distance <= movie.radius;
+        const isHighlighted =
+          selectedMovie &&
+          (movie.id === selectedMovie.id || similarMovies.some(m => m.id === movie.id));
+  
+        drawMovieNode(ctx, movie, isHighlighted, isHovered, selectedMovie);
+      });
+  
+      if (selectedMovie) {
+        drawSelectedMovieInfo(ctx, selectedMovie, similarMovies);
+      }
+  
+      ctx.restore();
+    } catch (error) {
+      console.error("❌ Canvas rendering failed:", error);
+    }
+  
+    // 🔧 CLEANUP FUNCTION (placed here):
+    return () => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          // optionally reset transform again just to be safe
+          if (ctx.reset) ctx.reset();
+          else ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+      }
+    };
+  }, [movies, selectedMovie, similarMovies, mousePosition, zoomLevel, panOffset]);
+  
+  
 
   /* ================
    *  Mouse Events
@@ -369,6 +411,31 @@ export default function MovieRecommendationGraph() {
           </button>
         ))}
       </div>
+
+      {/* Navigation Button to My Constellation */}
+        <div style={{
+          position: 'absolute',
+          top: 20,
+          right: 20,
+          zIndex: 20,
+        }}>
+          <a href="/my-constellation" style={{
+            padding: '8px 16px',
+            background: 'rgba(75, 75, 250, 0.8)',
+            color: 'white',
+            borderRadius: '6px',
+            textDecoration: 'none',
+            fontWeight: 'bold',
+            boxShadow: '0 0 8px rgba(0,0,0,0.5)',
+            transition: 'background 0.3s',
+          }}
+            onMouseOver={e => e.currentTarget.style.background = 'rgba(100,100,255,0.9)'}
+            onMouseOut={e => e.currentTarget.style.background = 'rgba(75,75,250,0.8)'}
+          >
+            My Constellation →
+          </a>
+        </div>
+
 
       {/* Main Canvas */}
       <canvas
