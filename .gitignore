@@ -2,6 +2,7 @@
 
 # dependencies
 cine-api/.env
+client/.next/
 cine-api/node_modules/
 client/node_modules/
 /node_modules
