@@ -8,13 +8,14 @@ import { drawMovieNode } from './MovieNodeRenderer';
 import { drawSelectedMovieInfo } from './MovieInfoRenderer';
 import useWatchedMovies from './useWatchedMovies';
 import WatchedMovieCheckbox from './WatchedMovieCheckbox';
+import StarryBackground from './StarryBackground';
+import Link from 'next/link';
 
 export default function MovieRecommendationGraph() {
   // ====== Auth/session ======
   const { data: session, status } = useSession();
   const userEmail = session?.user?.email;
 
-  // Auth handling (optional UX improvement)
   if (status === "loading") {
     return <div style={{ color: "#fff", padding: 48, textAlign: "center" }}>Loading...</div>;
   }
@@ -26,9 +27,7 @@ export default function MovieRecommendationGraph() {
   const canvasRef = useRef(null);
   const movies = useMoviesData();
 
-  /* =====================
-   *  Selection & Filters
-   * =====================*/
+  /* Selection & Filters */
   const [selectedMovie, setSelectedMovie] = useState(null);
 
   // Genre filtering
@@ -40,7 +39,7 @@ export default function MovieRecommendationGraph() {
       return next;
     });
   };
-  const clearGenres = () => setSelectedGenres(new Set()); // "Show All"
+  const clearGenres = () => setSelectedGenres(new Set());
 
   // Movies that pass the genre filter
   const visibleMovies = useMemo(() => {
@@ -48,7 +47,6 @@ export default function MovieRecommendationGraph() {
     return movies.filter(m => m.genres.some(g => selectedGenres.has(g)));
   }, [movies, selectedGenres]);
 
-  // If the selected movie is no longer visible, deselect it
   useEffect(() => {
     if (selectedMovie && !visibleMovies.some(m => m.id === selectedMovie.id)) {
       setSelectedMovie(null);
@@ -57,18 +55,14 @@ export default function MovieRecommendationGraph() {
 
   const similarMovies = useSimilarMovies(selectedMovie, visibleMovies);
 
-  /* ================
-   *  Zoom / Pan
-   * ================*/
+  /* Zoom / Pan */
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  /* ================
-   *  Search
-   * ================*/
+  /* Search */
   const [searchText, setSearchText] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   useEffect(() => {
@@ -97,45 +91,38 @@ export default function MovieRecommendationGraph() {
     setSuggestions([]);
   };
 
-  /* ================
-   *  Canvas Render
-   * ================*/
+  /* Canvas Render */
   useEffect(() => {
     const canvas = canvasRef.current;
-  
-    if (!canvas || movies.length === 0) return;
-  
+    if (!canvas || visibleMovies.length === 0) return;
     const ctx = canvas.getContext('2d');
     if (!(ctx instanceof CanvasRenderingContext2D)) {
       console.error("❌ Invalid canvas context — skipping draw");
       return;
     }
-  
     try {
       const dpr = window.devicePixelRatio || 1;
       const width = canvas.offsetWidth;
       const height = canvas.offsetHeight;
-  
+
       if (!width || !height) {
         console.warn("⚠️ Canvas has zero width or height — skipping render");
         return;
       }
-  
       canvas.width = width * dpr;
       canvas.height = height * dpr;
-  
       if (ctx.reset) ctx.reset();
       else ctx.setTransform(1, 0, 0, 1, 0, 0);
-  
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
-  
+
       ctx.scale(dpr * zoomLevel, dpr * zoomLevel);
       ctx.translate(panOffset.x / zoomLevel, panOffset.y / zoomLevel);
-  
-      drawConnections(ctx, movies, selectedMovie, similarMovies);
-  
-      movies.forEach(movie => {
+
+      drawConnections(ctx, visibleMovies, selectedMovie, similarMovies);
+
+      visibleMovies.forEach(movie => {
         const adjustedMouseX = (mousePosition.x - panOffset.x) / zoomLevel;
         const adjustedMouseY = (mousePosition.y - panOffset.y) / zoomLevel;
         const distance = Math.sqrt(
@@ -146,39 +133,33 @@ export default function MovieRecommendationGraph() {
         const isHighlighted =
           selectedMovie &&
           (movie.id === selectedMovie.id || similarMovies.some(m => m.id === movie.id));
-  
         drawMovieNode(ctx, movie, isHighlighted, isHovered, selectedMovie);
       });
-  
+
       if (selectedMovie) {
         drawSelectedMovieInfo(ctx, selectedMovie, similarMovies);
       }
-  
+
       ctx.restore();
     } catch (error) {
       console.error("❌ Canvas rendering failed:", error);
     }
-  
-    // 🔧 CLEANUP FUNCTION (placed here):
+
+    // Cleanup
     return () => {
       const canvas = canvasRef.current;
       if (canvas) {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          // optionally reset transform again just to be safe
           if (ctx.reset) ctx.reset();
           else ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
       }
     };
-  }, [movies, selectedMovie, similarMovies, mousePosition, zoomLevel, panOffset]);
-  
-  
+  }, [visibleMovies, selectedMovie, similarMovies, mousePosition, zoomLevel, panOffset]);
 
-  /* ================
-   *  Mouse Events
-   * ================*/
+  /* Mouse Events */
   const screenToGraphCoordinates = (screenX, screenY) => {
     const dpr = window.devicePixelRatio || 1;
     return {
@@ -257,9 +238,6 @@ export default function MovieRecommendationGraph() {
     }
   };
 
-  /* ================
-   *  Event Listeners Lifecycle
-   * ================*/
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -280,37 +258,66 @@ export default function MovieRecommendationGraph() {
     };
   }, [visibleMovies, isDragging, zoomLevel, panOffset]);
 
-  /* ================
-   *  Fade-in on mount
-   * ================*/
+  /* Fade-in on mount */
   const [opacity, setOpacity] = useState(0);
   useEffect(() => {
     const timer = setTimeout(() => setOpacity(1), 100);
     return () => clearTimeout(timer);
   }, []);
 
-  /* ================
-   *  Collect all genres for UI
-   * ================*/
+  /* Collect all genres for UI */
   const allGenres = useMemo(() => {
     const s = new Set();
     movies.forEach(m => m.genres.forEach(g => s.add(g)));
     return Array.from(s).sort();
   }, [movies]);
 
-  /* ================
-   *  Watched Movies Logic
-   * ================*/
+  /* Watched Movies Logic */
   const { watched, addWatched, removeWatched } = useWatchedMovies(userEmail);
   const isWatched = selectedMovie
     ? watched.some(m => m.id === selectedMovie.id)
     : false;
 
-  /* =============================================================
-   *  JSX
-   * =============================================================*/
+  // Calculate info panel position for checkbox overlay
+  let infoPanel = null;
+  if (selectedMovie && canvasRef.current) {
+    const infoX = selectedMovie.x + selectedMovie.radius + 20;
+    const infoY = selectedMovie.y - 40;
+    const width = 260;
+    const height = 160;
+    const dpr = window.devicePixelRatio || 1;
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const screenX = rect.left + (infoX * zoomLevel) + panOffset.x;
+    const screenY = rect.top + (infoY * zoomLevel) + panOffset.y;
+    infoPanel = { screenX, screenY, width, height };
+  }
+
   return (
-    <>
+    <div
+      style={{
+        width: "100vw",
+        height: "100vh",
+        minWidth: "100vw",
+        minHeight: "100vh",
+        overflow: "hidden",
+        position: "relative",
+        background: "#181822",
+      }}
+    >
+      {/* Starry background at the very back */}
+      <div style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        zIndex: 0,
+        pointerEvents: "none",
+      }}>
+        <StarryBackground />
+      </div>
+
       {/* Search Box */}
       <div style={{
         position: 'absolute',
@@ -413,34 +420,38 @@ export default function MovieRecommendationGraph() {
       </div>
 
       {/* Navigation Button to My Constellation */}
-        <div style={{
-          position: 'absolute',
-          top: 20,
-          right: 20,
-          zIndex: 20,
-        }}>
-          <a href="/my-constellation" style={{
-            padding: '8px 16px',
-            background: 'rgba(75, 75, 250, 0.8)',
-            color: 'white',
-            borderRadius: '6px',
-            textDecoration: 'none',
-            fontWeight: 'bold',
-            boxShadow: '0 0 8px rgba(0,0,0,0.5)',
-            transition: 'background 0.3s',
-          }}
+      <div style={{
+        position: 'absolute',
+        top: 20,
+        right: 20,
+        zIndex: 20,
+      }}>
+        <Link href="/my-constellation" legacyBehavior>
+          <a
+            style={{
+              padding: '8px 16px',
+              background: 'rgba(75, 75, 250, 0.8)',
+              color: 'white',
+              borderRadius: '6px',
+              textDecoration: 'none',
+              fontWeight: 'bold',
+              boxShadow: '0 0 8px rgba(0,0,0,0.5)',
+              transition: 'background 0.3s',
+            }}
             onMouseOver={e => e.currentTarget.style.background = 'rgba(100,100,255,0.9)'}
             onMouseOut={e => e.currentTarget.style.background = 'rgba(75,75,250,0.8)'}
           >
             My Constellation →
           </a>
-        </div>
-
+        </Link>
+      </div>
 
       {/* Main Canvas */}
       <canvas
         ref={canvasRef}
         style={{
+          width: "100vw",
+          height: "100vh",
           backgroundColor: 'transparent',
           position: 'absolute',
           top: 0,
@@ -452,15 +463,30 @@ export default function MovieRecommendationGraph() {
         }}
       />
 
-      {/* Watched Movie Checkbox Overlay */}
-      {selectedMovie && (
-        <WatchedMovieCheckbox
-          movie={selectedMovie}
-          isWatched={isWatched}
-          addWatched={addWatched}
-          removeWatched={removeWatched}
-          canvasRef={canvasRef}
-        />
+      {/* Watched Movie Checkbox Overlay INSIDE info panel */}
+      {selectedMovie && infoPanel && (
+        <div
+          style={{
+            position: "absolute",
+            left: infoPanel.screenX ,
+            top: infoPanel.screenY + infoPanel.height,
+            zIndex: 50,
+            background: "rgba(40,42,54,0.96)",
+            padding: "6px 12px",
+            borderRadius: "6px",
+            boxShadow: "0 0 8px #0008",
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <WatchedMovieCheckbox
+            movie={selectedMovie}
+            isWatched={isWatched}
+            addWatched={addWatched}
+            removeWatched={removeWatched}
+          />
+        </div>
       )}
 
       {/* Zoom Controls */}
@@ -481,6 +507,6 @@ export default function MovieRecommendationGraph() {
           setPanOffset({ x: 0, y: 0 });
         }}>Reset</button>
       </div>
-    </>
+    </div>
   );
 }

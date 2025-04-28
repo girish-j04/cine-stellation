@@ -187,11 +187,17 @@
   .fixed {
     position: fixed;
   }
+  .relative {
+    position: relative;
+  }
   .block {
     display: block;
   }
   .flex {
     display: flex;
+  }
+  .hidden {
+    display: none;
   }
   .inline-block {
     display: inline-block;

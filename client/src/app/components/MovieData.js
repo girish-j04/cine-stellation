@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { usePathname } from "next/navigation";
 
 // Optional: genre color mapping
 const genreColors = {
@@ -120,6 +121,7 @@ function applyForceLayout(movies, iterations = 50) {
 
 export default function useMoviesData() {
   const [movies, setMovies] = useState([]);
+  const pathname = usePathname(); // NEW: react to route changes
 
   useEffect(() => {
     async function fetchData() {
@@ -175,7 +177,7 @@ export default function useMoviesData() {
       }
     }
     fetchData();
-  }, []);
+  }, [pathname]); // <<<<<< Only change: run effect when path changes
 
   return movies;
 }
