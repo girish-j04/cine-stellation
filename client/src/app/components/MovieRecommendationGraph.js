@@ -445,6 +445,33 @@ export default function MovieRecommendationGraph() {
           </a>
         </Link>
       </div>
+      {/* Navigation Button to Search by Plot */}
+      <div style={{
+        position: 'absolute',
+        top: 20,
+        left: 20,
+        zIndex: 20,
+      }}>
+        <Link href="/plot" legacyBehavior>
+          <a
+            style={{
+              padding: '8px 16px',
+              background: 'rgba(75, 75, 250, 0.8)',
+              color: 'white',
+              borderRadius: '6px',
+              textDecoration: 'none',
+              fontWeight: 'bold',
+              boxShadow: '0 0 8px rgba(0,0,0,0.5)',
+              transition: 'background 0.3s',
+            }}
+            onMouseOver={e => e.currentTarget.style.background = 'rgba(100,100,255,0.9)'}
+            onMouseOut={e => e.currentTarget.style.background = 'rgba(75,75,250,0.8)'}
+          >
+            Search by Plot →
+          </a>
+        </Link>
+      </div>
+
 
       {/* Main Canvas */}
       <canvas
@@ -468,7 +495,7 @@ export default function MovieRecommendationGraph() {
         <div
           style={{
             position: "absolute",
-            left: infoPanel.screenX ,
+            left: infoPanel.screenX,
             top: infoPanel.screenY + infoPanel.height,
             zIndex: 50,
             background: "rgba(40,42,54,0.96)",

@@ -27,6 +27,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/graph/page.js"
     ],
+    "/plot/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/plot/page.js"
+    ],
     "/my-constellation/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
