@@ -155,4 +155,3 @@ async def remove_watched(req: RemoveWatchedRequest):
     if not success:
         raise HTTPException(status_code=400, detail="Could not remove watched movie.")
     return {"message": "Movie removed from watched list."}
-
