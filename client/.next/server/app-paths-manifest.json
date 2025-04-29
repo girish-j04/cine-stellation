@@ -1,7 +1,8 @@
 {
   "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/page": "app/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
   "/login/page": "app/login/page.js",
+  "/my-constellation/page": "app/my-constellation/page.js",
   "/graph/page": "app/graph/page.js",
-  "/my-constellation/page": "app/my-constellation/page.js"
+  "/page": "app/page.js"
 }
