@@ -155,3 +155,20 @@ async def remove_watched(req: RemoveWatchedRequest):
     if not success:
         raise HTTPException(status_code=400, detail="Could not remove watched movie.")
     return {"message": "Movie removed from watched list."}
+
+
+from pydantic import BaseModel
+from ml_engine import fetch_movies
+
+class QueryRequest(BaseModel):
+    query: str
+    top_k: int = 10
+
+@app.post("/ml/query")
+async def query_movies(req: QueryRequest):
+    try:
+        results = fetch_movies(req.query, top_k=req.top_k)
+        return {"results": results}
+    except Exception as e:
+        print("Error during ML query:", e)
+        raise HTTPException(status_code=500, detail="Internal server error during ML model inference.")

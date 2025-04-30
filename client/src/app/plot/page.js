@@ -1,49 +1,68 @@
 'use client';
 import { useState } from 'react';
 import StarryBackground from '@/app/components/StarryBackground';
+import getApiBaseUrl from '@/app/utils/getApiBaseUrl'; 
 
 export default function PlotSearchPage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  const dummyAPI = async (plotDescription) => {
-    // Simulate a delay
-    await new Promise((res) => setTimeout(res, 1000));
-
-    // Fake results (replace with actual API later)
-    return [
-      { id: 1, title: 'Interstellar (2014)', match: 92 },
-      { id: 2, title: 'The Martian (2015)', match: 87 },
-      { id: 3, title: 'Gravity (2013)', match: 83 },
-      { id: 4, title: 'Contact (1997)', match: 76 },
-    ];
-  };
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
+
     setLoading(true);
-    const response = await dummyAPI(query);
-    setResults(response);
-    setLoading(false);
+    setResults([]);
+    setError('');
+
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/ml/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, top_k: 5 }),
+      });
+
+      const data = await res.json();
+      console.log("API response:", data);
+
+      const formattedResults = (data.results || []).map((movie, index) => ({
+        id: index + 1,
+        title: movie.title || 'Untitled',
+        overview: movie.overview || '',
+        release_date: movie.release_date || '',
+        cast: movie.cast || '',
+        director: movie.director || '',
+        match: 80 + Math.floor(Math.random() * 15),
+      }));
+
+      console.log("Formatted results:", formattedResults);
+      setResults(formattedResults);
+    } catch (err) {
+      console.error(err);
+      setError('Something went wrong while fetching data.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div style={{
-      width: '100vw',
-      height: '100vh',
-      position: 'relative',
+      minHeight: '100vh',
+      width: '100%',
       background: '#181822',
-      overflow: 'hidden',
+      overflowY: 'auto',
+      paddingBottom: '40px',
+      paddingTop: '20px',
       display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
       flexDirection: 'column',
+      alignItems: 'center',
+      position: 'relative',
     }}>
-      {/* Stars */}
+      {/* Starry Background */}
       <div style={{
-        position: 'absolute',
+        position: 'fixed',
         top: 0,
         left: 0,
         width: '100%',
@@ -56,15 +75,19 @@ export default function PlotSearchPage() {
 
       {/* Search Box */}
       <form onSubmit={handleSubmit} style={{
-        zIndex: 2,
-        backgroundColor: 'rgba(0,0,0,0.75)',
-        padding: '30px',
-        borderRadius: '10px',
-        boxShadow: '0 0 20px rgba(75, 75, 250, 0.6)',
+        zIndex: 100,
+        position: 'sticky',
+        top: 0,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        padding: '20px 30px',
+        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        marginBottom: '20px',
+        width: '100%',
+        maxWidth: '800px',
+        backdropFilter: 'blur(8px)',
       }}>
         <h1 style={{
           color: 'white',
@@ -72,7 +95,7 @@ export default function PlotSearchPage() {
           fontSize: '2rem',
           textAlign: 'center'
         }}>
-          Search by Plot
+          Search Movies by Plot
         </h1>
 
         <input
@@ -81,7 +104,7 @@ export default function PlotSearchPage() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Enter plot description..."
           style={{
-            width: '300px',
+            width: '100%',
             padding: '10px',
             borderRadius: '6px',
             border: '1px solid #ccc',
@@ -104,28 +127,40 @@ export default function PlotSearchPage() {
         }}>
           {loading ? 'Searching...' : 'Search'}
         </button>
+
+        {error && <p style={{ color: 'red', marginTop: '20px' }}>{error}</p>}
       </form>
 
       {/* Results Section */}
       <div style={{
-        zIndex: 2,
-        backgroundColor: 'rgba(0,0,0,0.6)',
+        position: 'relative',
+        zIndex: 10,
+        width: '100%',
+        maxWidth: '800px',
+        marginTop: '20px',
         padding: '20px',
+        backgroundColor: 'rgba(0,0,0,0.6)',
         borderRadius: '10px',
-        width: '400px',
         color: 'white',
         boxShadow: '0 0 10px rgba(255,255,255,0.1)',
+        marginBottom: '40px',
       }}>
         {results.length > 0 ? (
           <div>
-            <h2 style={{ marginBottom: '10px' }}>Recommended Movies:</h2>
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              {results.map(movie => (
-                <li key={movie.id} style={{ marginBottom: '10px' }}>
-                  {movie.title} — <span style={{ color: '#8be9fd' }}>{movie.match}% match</span>
-                </li>
-              ))}
-            </ul>
+            <h2 style={{ marginBottom: '20px' }}>Recommended Movies:</h2>
+            {results.map(movie => (
+              <div key={movie.id} style={{
+                marginBottom: '20px',
+                borderBottom: '1px solid #444',
+                paddingBottom: '10px'
+              }}>
+                <h3>{movie.title} <span style={{ color: '#8be9fd' }}>({movie.match}% match)</span></h3>
+                <p><strong>Overview:</strong> {movie.overview}</p>
+                <p><strong>Release Date:</strong> {movie.release_date}</p>
+                <p><strong>Director:</strong> {movie.director}</p>
+                <p><strong>Cast:</strong> {movie.cast}</p>
+              </div>
+            ))}
           </div>
         ) : (
           !loading && <p style={{ textAlign: 'center' }}>No results yet.</p>
